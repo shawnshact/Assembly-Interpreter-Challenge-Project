@@ -117,7 +117,9 @@ class BuiltinProcedure(Procedure):
         # BEGIN PROBLEM 2
         "*** YOUR CODE HERE ***"
         try:
-            if args.second is nil:
+            if args is nil:
+                return self.fn()
+            elif args.second is nil:
                 if self.name == 'eval':
                     return self.fn(args.first, env)
                 return self.fn(args.first)
