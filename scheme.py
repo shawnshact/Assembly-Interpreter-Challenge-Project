@@ -111,6 +111,8 @@ class BuiltinProcedure(Procedure):
         "*** YOUR CODE HERE ***"
         try:
             if args.second is nil:
+                if self.name == 'eval':
+                    return self.fn(args.first, env)
                 return self.fn(args.first)
             else:
                 return self.fn(args.first, self.apply(args.second,env))
