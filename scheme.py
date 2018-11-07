@@ -42,7 +42,12 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
     environment ENV."""
-    return 'Your Code Here'
+    check_procedure(procedure)
+    if isinstance(procedure, BuiltinProcedure):
+        return procedure.apply(args, env)
+    else:
+        new_env = procedure.make_call_frame(args, env)
+        return eval_all(procedure.body, new_env)
 
 
 
