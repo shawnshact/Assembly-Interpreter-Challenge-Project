@@ -18,6 +18,8 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     4
     """
     if not isinstance(expr, Pair):
+        if isinstance(expr, str) and env.bindings.get(expr, None) == None:
+            raise SchemeError("Unknown identifier: {0}".format(expr))
         return env.bindings.get(expr, expr)
     elif expr.first == "define":
         if expr.second is not nil and expr.second.second is not nil:
@@ -27,7 +29,8 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         else:
             raise SchemeError("define must contain at least 2 items.")
     elif expr.first == 'quote':
-        return (expr.second)
+        print(repr(expr), repr(expr.first), repr(expr.second))
+        return expr.second
     else:
         if env.bindings.get(expr.first, None) != None:
             eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
