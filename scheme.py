@@ -17,6 +17,19 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
+    def quasi_eval(expr):
+        if not isinstance(expr, Pair):
+            return expr
+        else:
+            if expr.first == 'unquote':
+                expr, expr.first = expr.second, scheme_eval(expr.second.first, env)
+                if expr.second is nil:
+                    return expr.first
+            if isinstance(expr.first, Pair):
+                return Pair(quasi_eval(expr.first), quasi_eval(expr.second))
+            return Pair(expr.first, quasi_eval(expr.second))
+
+
     if not isinstance(expr, Pair):
         if isinstance(expr, str) and env.bindings.get(expr, None) == None:
             raise SchemeError("Unknown identifier: {0}".format(expr))
@@ -30,6 +43,8 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
             raise SchemeError("define must contain at least 2 items.")
     elif expr.first == 'quote':
         return expr.second.first
+    elif expr.first == 'quasiquote':
+        return quasi_eval(expr.second.first)
     else:
         if env.bindings.get(expr.first, None) != None:
             eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
