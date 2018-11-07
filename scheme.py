@@ -130,7 +130,7 @@ class BuiltinProcedure(Procedure):
                 return self.apply(args.second,env)
                 #return self.fn(args.first, self.apply(args.second,env))
         except:
-            raise SyntaxError("Cannot call {0} as it's not a procedure".format(args))
+            raise SchemeError("Cannot call {0} as it's not a procedure".format(args))
         # END PROBLEM 2
 
 
