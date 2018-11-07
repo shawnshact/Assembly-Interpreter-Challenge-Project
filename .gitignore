@@ -39,6 +39,11 @@ Thumbs.db
 tests/
 images/
 __pycache__/
+.ok_history
+.ok_messages
+.ok_storage.bak
+.ok_storage.dat
+.ok_storage.dir
 buffer.py
 ucb.py
 proj04.ok

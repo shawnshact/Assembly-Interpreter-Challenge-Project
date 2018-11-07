@@ -115,7 +115,7 @@ def scheme_read(src):
     "*** YOUR CODE HERE ***"
     val = src.remove_front()
     if val in quotes:
-        return Pair(quotes[val], scheme_read(src))
+        return Pair(quotes[val], Pair(scheme_read(src),nil))
     if val == 'nil':
         return nil
     elif val not in DELIMITERS:

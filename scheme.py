@@ -29,8 +29,7 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         else:
             raise SchemeError("define must contain at least 2 items.")
     elif expr.first == 'quote':
-        print(repr(expr), repr(expr.first), repr(expr.second))
-        return expr.second
+        return expr.second.first
     else:
         if env.bindings.get(expr.first, None) != None:
             eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
@@ -122,8 +121,12 @@ class BuiltinProcedure(Procedure):
                 if self.name == 'eval':
                     return self.fn(args.first, env)
                 return self.fn(args.first)
+            elif args.second.second is nil:
+                return self.fn(args.first, args.second.first)
             else:
-                return self.fn(args.first, self.apply(args.second,env))
+                args.second.first = self.fn(args.first, args.second.first)
+                return self.apply(args.second,env)
+                #return self.fn(args.first, self.apply(args.second,env))
         except:
             raise SyntaxError("Cannot call {0} as it's not a procedure".format(args))
         # END PROBLEM 2
