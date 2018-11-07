@@ -22,8 +22,8 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     elif expr.first == "define":
         if expr.second is not nil and expr.second.second is not nil:
             symbol = expr.second.first
-            eval = expr.second.second.map(lambda param: scheme_eval(param, env)).first
-            return env.define(symbol, eval)
+            val = expr.second.second.map(lambda param: scheme_eval(param, env)).first
+            return env.define(symbol, val)
         else:
             raise SchemeError("define must contain at least 2 items.")
     elif expr.first == 'quote':
