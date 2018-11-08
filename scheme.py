@@ -52,7 +52,7 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
             else:
                 raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
     except:
-        raise SchemeError("Invalide scheme expression")
+        raise SchemeError("Invalid scheme expression")
 
 
 def scheme_apply(procedure, args, env):
