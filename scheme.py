@@ -8,6 +8,26 @@ from ucb import main, trace
 # Eval/Apply #
 ##############
 
+def begin_eval(expr, env):
+    if expr.second is nil:
+        return scheme_eval(expr.first,env)
+    else:
+        scheme_eval(expr.first,env)
+        #print(expr.second.first)
+        return begin_eval(expr.second, env)
+
+def quasi_eval(expr ,env):
+    if not isinstance(expr, Pair):
+        return expr
+    else:
+        if expr.first == 'unquote':
+            expr, expr.first = expr.second, scheme_eval(expr.second.first, env)
+            if expr.second is nil:
+                return expr.first
+        if isinstance(expr.first, Pair):
+            return Pair(quasi_eval(expr.first,env), quasi_eval(expr.second,env))
+        return Pair(expr.first, quasi_eval(expr.second,env))
+
 def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     """Evaluate Scheme expression EXPR in environment ENV.
 
@@ -17,43 +37,35 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     >>> scheme_eval(expr, create_global_frame())
     4
     """
-    def quasi_eval(expr):
-        if not isinstance(expr, Pair):
-            return expr
+    if not isinstance(expr, Pair):
+        if isinstance(expr, str) and env.bindings.get(expr, None) == None:
+            raise SchemeError("Unknown identifier: {0}".format(expr))
+        return env.bindings.get(expr, expr)
+    elif expr.first == "define":
+        if expr.second is not nil and expr.second.second is not nil:
+            symbol = expr.second.first
+            val = expr.second.second.map(lambda param: scheme_eval(param, env)).first
+            return env.define(symbol, val)
         else:
-            if expr.first == 'unquote':
-                expr, expr.first = expr.second, scheme_eval(expr.second.first, env)
-                if expr.second is nil:
-                    return expr.first
-            if isinstance(expr.first, Pair):
-                return Pair(quasi_eval(expr.first), quasi_eval(expr.second))
-            return Pair(expr.first, quasi_eval(expr.second))
-
-    try:
-        if not isinstance(expr, Pair):
-            if isinstance(expr, str) and env.bindings.get(expr, None) == None:
-                raise SchemeError("Unknown identifier: {0}".format(expr))
-            return env.bindings.get(expr, expr)
-        elif expr.first == "define":
-            if expr.second is not nil and expr.second.second is not nil:
-                symbol = expr.second.first
-                val = expr.second.second.map(lambda param: scheme_eval(param, env)).first
-                return env.define(symbol, val)
-            else:
-                raise SchemeError("define must contain at least 2 items.")
-        elif expr.first == 'quote':
-            return expr.second.first
-        elif expr.first == 'quasiquote':
-            return quasi_eval(expr.second.first)
+            raise SchemeError("define must contain at least 2 items.")
+    elif expr.first == 'quote':
+        return expr.second.first
+    elif expr.first == 'quasiquote':
+        return quasi_eval(expr.second.first,env)
+    elif expr.first == 'begin':
+        return begin_eval(expr.second, env)
+    elif expr.first == 'lambda':
+        return env.lambda_expr(expr.second)
+        #if expr.second.second is not nil:
+            #return scheme_apply(env.lambda_expr(expr.second), expr.second.second)
+    else:
+        if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
+            eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
+            return env.bindings[expr.first].apply(eval_expr, env)
         else:
-            if env.bindings.get(expr.first, None) != None:
-                eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
-                return env.bindings[expr.first].apply(eval_expr, env)
-            else:
-                raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
-    except:
-        raise SchemeError("Invalide scheme expression")
-
+            raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
+    #except:
+        #raise SchemeError("Invalid scheme expression")
 
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
@@ -99,6 +111,9 @@ class Frame:
 
     # BEGIN PROBLEM 2/3
     "*** YOUR CODE HERE ***"
+    def lambda_expr(self, expr):
+        return LambdaProcedure(expr.first, expr.second, self)
+
     # END PROBLEM 2/3
 
 ##############
@@ -107,6 +122,8 @@ class Frame:
 
 class Procedure:
     """The supertype of all Scheme procedures."""
+    def make_call_frame(self, args, parent):
+        self.env = Frame(parent)
 
 def scheme_procedurep(x):
     return isinstance(x, Procedure)
@@ -120,7 +137,7 @@ class BuiltinProcedure(Procedure):
         self.use_env = use_env
 
     def __str__(self):
-        return '#[{0}]'.format(self.name)
+        return '#[{0}]'.format(self.naenvme)
 
     def apply(self, args, env):
         """Apply SELF to ARGS in ENV, where ARGS is a Scheme list.
@@ -158,6 +175,7 @@ class BuiltinProcedure(Procedure):
         # END PROBLEM 2
 
 
+
 class LambdaProcedure(Procedure):
     """A procedure defined by a lambda expression or a define form."""
 
@@ -176,6 +194,18 @@ class LambdaProcedure(Procedure):
         return 'LambdaProcedure({0}, {1}, {2})'.format(
             repr(self.formals), repr(self.body), repr(self.env))
 
+    def apply(self, args):
+        """evaluates a lambda procedure on the arguments that have been
+        passed in"""
+        if len(args) > len(self.formals):
+            raise SchemeError('Too many arguments to function call.')
+        elif len(args) < len(self.formals):
+            raise SchemeError('Too few arguments to function call.')
+        else:
+            while args is not nil:
+                self.env.bindings[self.formals.first] = self.args.first
+                args = args.second
+            return scheme_eval(self.body, self.env)
 
 def add_builtins(frame, funcs_and_names):
     """Enter bindings in FUNCS_AND_NAMES into FRAME, an environment frame,
