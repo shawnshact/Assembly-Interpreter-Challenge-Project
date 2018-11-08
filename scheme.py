@@ -62,8 +62,10 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         return begin_eval(expr.second, env)
     elif expr.first == 'lambda':
         return env.lambda_expr(expr.second)
-        #if expr.second.second is not nil:
-            #return scheme_apply(env.lambda_expr(expr.second), expr.second.second)
+    elif expr.first == 'and':
+        return and_form(expr.second,env)
+    elif expr.first == 'or':
+        return or_form(expr.second,env)
     else:
         eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
         if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
@@ -237,7 +239,25 @@ def add_builtins(frame, funcs_and_names):
 How you implement special forms is up to you. We recommend you encapsulate the
 logic for each special form separately somehow, which you can do here.
 """
+def and_form(args,env):
+    if args is nil:
+        return True
+    while args.second is not nil:
+        arg = scheme_eval(args.first, env)
+        if arg is False:
+            return arg
+        args = args.second
+    return scheme_eval(args.first,env)
 
+def or_form(args,env):
+    if args is nil:
+        return False
+    while args.second is not nil:
+        arg = scheme_eval(args.first, env)
+        if arg is not False:
+            return arg
+        args = args.second
+    return scheme_eval(args.first,env)
 
 # Utility methods for checking the structure of Scheme programs
 
