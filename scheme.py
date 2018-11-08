@@ -29,28 +29,30 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
                 return Pair(quasi_eval(expr.first), quasi_eval(expr.second))
             return Pair(expr.first, quasi_eval(expr.second))
 
-
-    if not isinstance(expr, Pair):
-        if isinstance(expr, str) and env.bindings.get(expr, None) == None:
-            raise SchemeError("Unknown identifier: {0}".format(expr))
-        return env.bindings.get(expr, expr)
-    elif expr.first == "define":
-        if expr.second is not nil and expr.second.second is not nil:
-            symbol = expr.second.first
-            val = expr.second.second.map(lambda param: scheme_eval(param, env)).first
-            return env.define(symbol, val)
+    try:
+        if not isinstance(expr, Pair):
+            if isinstance(expr, str) and env.bindings.get(expr, None) == None:
+                raise SchemeError("Unknown identifier: {0}".format(expr))
+            return env.bindings.get(expr, expr)
+        elif expr.first == "define":
+            if expr.second is not nil and expr.second.second is not nil:
+                symbol = expr.second.first
+                val = expr.second.second.map(lambda param: scheme_eval(param, env)).first
+                return env.define(symbol, val)
+            else:
+                raise SchemeError("define must contain at least 2 items.")
+        elif expr.first == 'quote':
+            return expr.second.first
+        elif expr.first == 'quasiquote':
+            return quasi_eval(expr.second.first)
         else:
-            raise SchemeError("define must contain at least 2 items.")
-    elif expr.first == 'quote':
-        return expr.second.first
-    elif expr.first == 'quasiquote':
-        return quasi_eval(expr.second.first)
-    else:
-        if env.bindings.get(expr.first, None) != None:
-            eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
-            return env.bindings[expr.first].apply(eval_expr, env)
-        else:
-            raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
+            if env.bindings.get(expr.first, None) != None:
+                eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
+                return env.bindings[expr.first].apply(eval_expr, env)
+            else:
+                raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
+    except:
+        raise SchemeError("Invalide scheme expression")
 
 
 def scheme_apply(procedure, args, env):
@@ -131,21 +133,28 @@ class BuiltinProcedure(Procedure):
         """
         # BEGIN PROBLEM 2
         "*** YOUR CODE HERE ***"
+        args_list = []
         try:
             if args is nil:
                 return self.fn()
             elif args.second is nil:
-                if self.name == 'eval':
+                if self.use_env:
                     return self.fn(args.first, env)
                 return self.fn(args.first)
             elif args.second.second is nil:
                 return self.fn(args.first, args.second.first)
             else:
-                args.second.first = self.fn(args.first, args.second.first)
-                return self.apply(args.second,env)
+                while args is not nil:
+                    if isinstance(args.first, Pair):
+                        args_list.extend(scheme_eval(args.first, env))
+                    else:
+                        args_list.append(args.first)
+                    args = args.second
+                return self.fn(*args_list)
                 #return self.fn(args.first, self.apply(args.second,env))
         except:
             raise SchemeError("Cannot call {0} as it's not a procedure".format(args))
+
         # END PROBLEM 2
 
 
