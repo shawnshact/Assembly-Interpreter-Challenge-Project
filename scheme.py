@@ -62,6 +62,8 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
             eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
             return env.bindings[expr.first].apply(eval_expr, env)
+        elif isinstance(expr.first, Pair) and expr.first == 'lambda':
+            print('hi') #add functionality here
         else:
             raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
     #except:
@@ -112,8 +114,10 @@ class Frame:
     # BEGIN PROBLEM 2/3
     "*** YOUR CODE HERE ***"
     def lambda_expr(self, expr):
-        return LambdaProcedure(expr.first, expr.second, self)
-
+        if expr.second is not nil:
+            return LambdaProcedure(expr.first, expr.second, self)
+        else:
+            raise SchemeError('{0} must contain at least 2 items.'.format(expr))
     # END PROBLEM 2/3
 
 ##############
@@ -137,7 +141,7 @@ class BuiltinProcedure(Procedure):
         self.use_env = use_env
 
     def __str__(self):
-        return '#[{0}]'.format(self.naenvme)
+        return '#[{0}]'.format(self.name)
 
     def apply(self, args, env):
         """Apply SELF to ARGS in ENV, where ARGS is a Scheme list.
