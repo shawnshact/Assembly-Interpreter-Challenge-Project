@@ -13,7 +13,6 @@ def begin_eval(expr, env):
         return scheme_eval(expr.first,env)
     else:
         scheme_eval(expr.first,env)
-        #print(expr.second.first)
         return begin_eval(expr.second, env)
 
 def quasi_eval(expr ,env):
@@ -57,15 +56,19 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
     elif expr.first == 'quote':
         return expr.second.first
     elif expr.first == 'quasiquote':
-        return quasi_eval(expr.second.first,env)
+        return quasi_eval(expr.second.first, env)
     elif expr.first == 'begin':
         return begin_eval(expr.second, env)
     elif expr.first == 'lambda':
         return env.lambda_expr(expr.second)
     elif expr.first == 'and':
-        return and_form(expr.second,env)
+        return and_form(expr.second, env)
     elif expr.first == 'or':
-        return or_form(expr.second,env)
+        return or_form(expr.second, env)
+    elif expr.first == 'if':
+        return if_form(expr.second, env)
+    elif expr.first == 'cond':
+        return cond_form(expr.second, env)
     else:
         eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
         if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
@@ -180,7 +183,6 @@ class BuiltinProcedure(Procedure):
                         args_list.append(args.first)
                     args = args.second
                 return self.fn(*args_list)
-                #return self.fn(args.first, self.apply(args.second,env))
         except:
             raise SchemeError("Cannot call {0} as it's not a procedure".format(args))
 
@@ -258,6 +260,32 @@ def or_form(args,env):
             return arg
         args = args.second
     return scheme_eval(args.first,env)
+
+def if_form(args,env):
+    if len(args) == 1:
+        raise SchemeError('if statement must contain at least 2 items.')
+    else:
+        if scheme_eval(args.first,env) is not False:
+            return scheme_eval(args.second.first, env)
+        else:
+            if args.second.second is not nil:
+                return scheme_eval(args.second.second.first, env)
+
+def cond_form(args,env):
+    while args is not nil:
+        if not isinstance(args.first,Pair):
+            raise SchemeError('{0} is not a valid list.'.format(args.first))
+        cond_expr = args.first
+        if cond_expr.first == 'else':
+            bool_expr = True
+        else:
+            bool_expr = scheme_eval(cond_expr.first,env)
+        if bool_expr is not False or cond_expr == 'else':
+            if cond_expr.second is not nil:
+                return begin_eval(cond_expr.second,env)
+            else:
+                return bool_expr
+        args = args.second
 
 # Utility methods for checking the structure of Scheme programs
 
