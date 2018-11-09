@@ -69,12 +69,18 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         return if_form(expr.second, env)
     elif expr.first == 'cond':
         return cond_form(expr.second, env)
+    elif expr.first == 'let':
+        return let_form(expr.second, env)
+    elif expr.first == 'mu':
+        return env.mu_expr(expr.second)
     else:
         eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
         if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
             return env.bindings[expr.first].apply(eval_expr, env)
         elif isinstance(expr.first, Pair) and (expr.first.first == 'lambda' or isinstance(env.bindings.get(expr.first.first,None), LambdaProcedure)):
             return scheme_eval(expr.first,env).apply(eval_expr,env) #add functionality here
+        elif isinstance(expr.first, Pair) and (expr.first.first == 'mu' or isinstance(env.bindings.get(expr.first.first,None), MuProcedure)):
+            return scheme_eval(expr.first,env).apply(eval_expr,env)
         else:
             raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
     #except:
@@ -105,7 +111,7 @@ class Frame:
         if self.parent is None:
             self.bindings = {}
         else:
-            self.bindings = parent.bindings
+            self.bindings = parent.bindings.copy()
 
     def __repr__(self):
         if self.parent is None:
@@ -127,6 +133,12 @@ class Frame:
     def lambda_expr(self, expr):
         if expr.second is not nil:
             return LambdaProcedure(expr.first, expr.second, self)
+        else:
+            raise SchemeError('{0} must contain at least 2 items.'.format(expr))
+
+    def mu_expr(self,expr):
+        if expr.second is not nil:
+            return MuProcedure(expr.first, expr.second)
         else:
             raise SchemeError('{0} must contain at least 2 items.'.format(expr))
     # END PROBLEM 2/3
@@ -287,6 +299,22 @@ def cond_form(args,env):
                 return bool_expr
         args = args.second
 
+def let_form(args, env):
+    bindings = args.first
+    body = args.second
+    def extract_names_and_expr(args):
+        names, expr = nil, nil
+        while args is not nil:
+            bind = args.first
+            names, expr = Pair(bind.first, names), Pair(scheme_eval(bind.second.first,env), expr)
+            args = args.second
+        return names, expr
+
+    names, expr = extract_names_and_expr(bindings)
+    new_proc = LambdaProcedure(names, body, env)
+    return scheme_eval(new_proc, env).apply(expr,env)
+
+
 # Utility methods for checking the structure of Scheme programs
 
 def check_form(expr, min, max=float('inf')):
@@ -361,6 +389,23 @@ class MuProcedure(Procedure):
     def __repr__(self):
         return 'MuProcedure({0}, {1})'.format(
             repr(self.formals), repr(self.body))
+
+    def apply(self, args, env):
+        """evaluates a lambda procedure on the arguments that have been
+        passed in"""
+        if len(args) > len(self.formals):
+            raise SchemeError('Too many arguments to function call.')
+        elif len(args) < len(self.formals):
+            raise SchemeError('Too few arguments to function call.')
+        else:
+            temp_formals = self.formals
+            while args is not nil:
+                env.define(temp_formals.first, args.first)
+                args, temp_formals = args.second, temp_formals.second
+            if len(self.body) <= 1:
+                return scheme_eval(self.body.first, env)
+            else:
+                return scheme_eval(begin_eval(self.body,env),env)
 
 
 ##################
