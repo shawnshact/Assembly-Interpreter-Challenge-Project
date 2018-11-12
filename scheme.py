@@ -75,16 +75,16 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
         return env.mu_expr(expr.second)
     else:
         eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
-        if not isinstance(expr.first, Pair) and env.bindings.get(expr.first, None) != None:
-            return env.bindings[expr.first].apply(eval_expr, env)
-        elif isinstance(expr.first, Pair) and (expr.first.first == 'lambda' or isinstance(env.bindings.get(expr.first.first,None), LambdaProcedure)):
-            return scheme_eval(expr.first,env).apply(eval_expr,env) #add functionality here
-        elif isinstance(expr.first, Pair) and (expr.first.first == 'mu' or isinstance(env.bindings.get(expr.first.first,None), MuProcedure)):
-            return scheme_eval(expr.first,env).apply(eval_expr,env)
+        if not isinstance(expr.first, Pair):
+            if env.bindings.get(expr.first, None) != None:
+                return env.bindings[expr.first].apply(eval_expr, env)
+            else:
+                raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
         else:
-            raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
-    #except:
-        #raise SchemeError("Invalid scheme expression")
+            if isinstance(expr.first.first, Pair) or expr.first.first == 'lambda' or expr.first.first == 'mu' or isinstance(env.bindings.get(expr.first.first,None), Procedure):
+                return scheme_eval(expr.first,env).apply(eval_expr,env) #add functionality here
+            else:
+                raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
 
 def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
@@ -228,7 +228,7 @@ class LambdaProcedure(Procedure):
         elif len(args) < len(self.formals):
             raise SchemeError('Too few arguments to function call.')
         else:
-            self.make_call_frame(args, env)
+            self.make_call_frame(args, self.env)
             temp_formals = self.formals
             while args is not nil:
                 self.env.define(temp_formals.first, args.first)
@@ -236,7 +236,7 @@ class LambdaProcedure(Procedure):
             if len(self.body) <= 1:
                 return scheme_eval(self.body.first, self.env)
             else:
-                return scheme_eval(begin_eval(self.body,env),self.env)
+                return begin_eval(self.body,self.env)
 
 def add_builtins(frame, funcs_and_names):
     """Enter bindings in FUNCS_AND_NAMES into FRAME, an environment frame,
@@ -306,13 +306,15 @@ def let_form(args, env):
         names, expr = nil, nil
         while args is not nil:
             bind = args.first
+            if len(bind) > 2:
+                raise SchemeError('{0} must contain at most 2 items.'.format(bind))
             names, expr = Pair(bind.first, names), Pair(scheme_eval(bind.second.first,env), expr)
             args = args.second
         return names, expr
 
     names, expr = extract_names_and_expr(bindings)
     new_proc = LambdaProcedure(names, body, env)
-    return scheme_eval(new_proc, env).apply(expr,env)
+    return scheme_eval(new_proc, env).apply(expr, env)
 
 
 # Utility methods for checking the structure of Scheme programs
