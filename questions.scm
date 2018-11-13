@@ -15,8 +15,13 @@
 ;; Returns a list of two-element lists
 (define (enumerate s)
   ; BEGIN PROBLEM 17
-  'replace-this-line
+  (define (count_up n s)
+    (if (null? s) nil
+      (cons (list n (car s)) (count_up (+ n 1) (cdr s)))
+    )
   )
+  (count_up 0 s)
+)
   ; END PROBLEM 17
 
 ;; Problem 18
