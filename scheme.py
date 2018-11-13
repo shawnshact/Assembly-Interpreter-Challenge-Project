@@ -90,11 +90,8 @@ def scheme_apply(procedure, args, env):
     """Apply Scheme PROCEDURE to argument values ARGS (a Scheme list) in
     environment ENV."""
     check_procedure(procedure)
-    if isinstance(procedure, BuiltinProcedure):
+    if isinstance(procedure, Procedure):
         return procedure.apply(args, env)
-    else:
-        new_env = procedure.make_call_frame(args, env)
-        return eval_all(procedure.body, new_env)
 
 
 
@@ -186,6 +183,8 @@ class BuiltinProcedure(Procedure):
                     return self.fn(args.first, env)
                 return self.fn(args.first)
             elif args.second.second is nil:
+                if self.use_env:
+                    return self.fn(args.first, args.second.first, env)
                 return self.fn(args.first, args.second.first)
             else:
                 while args is not nil:

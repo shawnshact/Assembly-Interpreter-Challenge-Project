@@ -28,8 +28,15 @@
 ;; List all ways to make change for TOTAL with DENOMS
 (define (list-change total denoms)
   ; BEGIN PROBLEM 18
-  'replace-this-line
+  (define (cons-all n s)
+    (map (lambda (lst) (append (list n) lst)) s)
   )
+  (cond
+    ((< total 0) cons-all)
+    ()
+    ()
+  )
+)
   ; END PROBLEM 18
 
 ;; Problem 19
