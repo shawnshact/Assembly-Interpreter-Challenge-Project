@@ -6,7 +6,8 @@
 ; Some utility functions that you may find useful to implement.
 
 (define (cons-all first rests)
-  'replace-this-line)
+  (map (lambda (lst) (append (list first) lst)) rests)
+)
 
 (define (zip pairs)
   'replace-this-line)
@@ -28,16 +29,14 @@
 ;; List all ways to make change for TOTAL with DENOMS
 (define (list-change total denoms)
   ; BEGIN PROBLEM 18
-  (define (cons-all n s)
-    (map (lambda (lst) (append (list n) lst)) s)
-  )
   (cond
-    ((< total 0) cons-all)
-    ()
-    ()
+    ((null? denoms) nil)
+    ((< total 0) (list-change total (cdr denoms)))
+    ((= total 0) (list nil))
+    (else (append (cons-all (car denoms) (list-change (- total (car denoms)) denoms)) (list-change total (cdr denoms))))
   )
 )
-  ; END PROBLEM 18
+; END PROBLEM 18
 
 ;; Problem 19
 ;; Returns a function that checks if an expression is the special form FORM
