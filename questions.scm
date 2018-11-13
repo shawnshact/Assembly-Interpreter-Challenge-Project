@@ -50,6 +50,15 @@
 
 ;; Converts all let special forms in EXPR into equivalent forms using lambda
 (define (let-to-lambda expr)
+  (define (helper body)
+    (map
+      (lambda (s)
+        (cond
+          ((atom? s) s)
+          ((let? s) (let-to-lambda s))
+          (else s)
+        )) body)
+  )
   (cond ((atom? expr)
          ; BEGIN PROBLEM 19
          expr
@@ -66,19 +75,21 @@
                (params (cadr expr))
                (body   (cddr expr)))
            ; BEGIN PROBLEM 19
-           (append (list 'lambda params) (map (lambda (s) (if (let? s) (let-to-lambda s) s)) body))
+           (append (list 'lambda params) (helper body))
            ; END PROBLEM 19
            ))
         ((let? expr)
          (let ((values (cadr expr))
                (body   (cddr expr)))
            ; BEGIN PROBLEM 19
-            (append (list (append (list 'lambda (car (zip values))) (map (lambda (s) (if (let? s) (let-to-lambda s) s)) body))) (cadr (zip values)))
+            (append (list (append (list 'lambda (car (zip values))) (helper body))) (helper (cadr (zip values))))
            ; END PROBLEM 19
            ))
         (else
          ; BEGIN PROBLEM 19
-         (eval expr)
+         (helper expr)
          ; END PROBLEM 19
          )))
 ;(let-to-lambda '(let ((a 1) (b 2)) (+ a b)))
+(let-to-lambda '(lambda (x) a (let ((a x)) a)))
+(let-to-lambda '(let ((a x)) a))
