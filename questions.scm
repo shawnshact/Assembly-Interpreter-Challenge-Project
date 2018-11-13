@@ -10,7 +10,7 @@
 )
 
 (define (zip pairs)
-  'replace-this-line)
+  (list (map car pairs) (map cadr pairs)))
 
 ;; Problem 17
 ;; Returns a list of two-element lists
@@ -52,12 +52,12 @@
 (define (let-to-lambda expr)
   (cond ((atom? expr)
          ; BEGIN PROBLEM 19
-         'replace-this-line
+         expr
          ; END PROBLEM 19
          )
         ((quoted? expr)
          ; BEGIN PROBLEM 19
-         'replace-this-line
+         expr
          ; END PROBLEM 19
          )
         ((or (lambda? expr)
@@ -66,18 +66,19 @@
                (params (cadr expr))
                (body   (cddr expr)))
            ; BEGIN PROBLEM 19
-           'replace-this-line
+           (append (list 'lambda params) (map (lambda (s) (if (let? s) (let-to-lambda s) s)) body))
            ; END PROBLEM 19
            ))
         ((let? expr)
          (let ((values (cadr expr))
                (body   (cddr expr)))
            ; BEGIN PROBLEM 19
-           'replace-this-line
+            (append (list (append (list 'lambda (car (zip values))) (map (lambda (s) (if (let? s) (let-to-lambda s) s)) body))) (cadr (zip values)))
            ; END PROBLEM 19
            ))
         (else
          ; BEGIN PROBLEM 19
-         'replace-this-line
+         (eval expr)
          ; END PROBLEM 19
          )))
+;(let-to-lambda '(let ((a 1) (b 2)) (+ a b)))
