@@ -10,24 +10,24 @@ from ucb import main, trace
 
 def begin_eval(expr, env):
     if expr.second is nil:
-        return scheme_eval(expr.first,env)
+        return scheme_eval(expr.first,env,True)
     else:
         scheme_eval(expr.first,env)
         return begin_eval(expr.second, env)
 
-def quasi_eval(expr ,env):
+def quasi_eval(expr, env, tail=False):
     if not isinstance(expr, Pair):
         return expr
     else:
         if expr.first == 'unquote':
-            expr, expr.first = expr.second, scheme_eval(expr.second.first, env)
+            expr, expr.first = expr.second, scheme_eval(expr.second.first, env,tail)
             if expr.second is nil:
                 return expr.first
         if isinstance(expr.first, Pair):
             return Pair(quasi_eval(expr.first,env), quasi_eval(expr.second,env))
         return Pair(expr.first, quasi_eval(expr.second,env))
 
-def scheme_eval(expr, env, _=None): # Optional third argument is ignored
+def scheme_eval(expr, env, tail=True): # Optional third argument is ignored
     """Evaluate Scheme expression EXPR in environment ENV.
 
     >>> expr = read_line('(+ 2 2)')
@@ -82,7 +82,7 @@ def scheme_eval(expr, env, _=None): # Optional third argument is ignored
                 raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
         else:
             if isinstance(expr.first.first, Pair) or expr.first.first == 'lambda' or expr.first.first == 'mu' or isinstance(env.bindings.get(expr.first.first,None), Procedure):
-                return scheme_eval(expr.first,env).apply(eval_expr,env) #add functionality here
+                return complete_apply(scheme_eval(expr.first,env), eval_expr,env) #add functionality here
             else:
                 raise  SchemeError("Cannot call {0} as it's not a procedure".format(expr.first))
 
@@ -233,7 +233,7 @@ class LambdaProcedure(Procedure):
                 self.env.define(temp_formals.first, args.first)
                 args, temp_formals = args.second, temp_formals.second
             if len(self.body) <= 1:
-                return scheme_eval(self.body.first, self.env)
+                return scheme_eval(self.body.first, self.env,True)
             else:
                 return begin_eval(self.body,self.env)
 
@@ -260,7 +260,7 @@ def and_form(args,env):
         if arg is False:
             return arg
         args = args.second
-    return scheme_eval(args.first,env)
+    return scheme_eval(args.first,env,True)
 
 def or_form(args,env):
     if args is nil:
@@ -270,17 +270,17 @@ def or_form(args,env):
         if arg is not False:
             return arg
         args = args.second
-    return scheme_eval(args.first,env)
+    return scheme_eval(args.first,env,True)
 
 def if_form(args,env):
     if len(args) == 1:
         raise SchemeError('if statement must contain at least 2 items.')
     else:
         if scheme_eval(args.first,env) is not False:
-            return scheme_eval(args.second.first, env)
+            return scheme_eval(args.second.first, env,True)
         else:
             if args.second.second is not nil:
-                return scheme_eval(args.second.second.first, env)
+                return scheme_eval(args.second.second.first, env,True)
 
 def cond_form(args,env):
     while args is not nil:
@@ -404,9 +404,9 @@ class MuProcedure(Procedure):
                 env.define(temp_formals.first, args.first)
                 args, temp_formals = args.second, temp_formals.second
             if len(self.body) <= 1:
-                return scheme_eval(self.body.first, env)
+                return scheme_eval(self.body.first, env,True)
             else:
-                return scheme_eval(begin_eval(self.body,env),env)
+                return scheme_eval(begin_eval(self.body,env),env,True)
 
 
 ##################
@@ -414,6 +414,24 @@ class MuProcedure(Procedure):
 ##################
 
 # Make classes/functions for creating tail recursive programs here?
+class Thunk:
+    def __init__(self, expr, env):
+        self.expr = expr
+        self.env = env
+
+
+def make_tail_eval(eval_func):
+    def tail_eval(expr, env, tail=False):
+        if tail and not scheme_symbolp(expr) and not scheme_atomp(expr) and expr is not None:
+            return Thunk(expr, env)
+        eval_expr = Thunk(expr, env)
+        while isinstance(eval_expr,Thunk):
+            eval_expr = eval_func(eval_expr.expr,eval_expr.env)
+        return eval_expr
+    return tail_eval
+
+scheme_eval = make_tail_eval(scheme_eval)
+
 
 def complete_apply(procedure, args, env):
     """Apply procedure to args in env; ensure the result is not a Thunk.
@@ -421,10 +439,9 @@ def complete_apply(procedure, args, env):
     if you attempt the extra credit."""
     val = scheme_apply(procedure, args, env)
     # Add stuff here?
+    if isinstance(val, Thunk):
+        return scheme_eval(val.expr, val.env, True)
     return val
-
-
-
 ####################
 # Extra Procedures #
 ####################
