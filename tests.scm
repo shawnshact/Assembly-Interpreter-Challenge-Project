@@ -10,7 +10,41 @@
 ;;; *** Add your own tests here! ***
 ;;; ********************************
 ; BEGIN PROBLEM 0
-'replace-this-line
+; 1.1.1 added
+
+5
+; expect 5
+
+(+ 43 2)
+;expect 45
+
+(- 25 5)
+; expect 20
+
+(* 23 3)
+; expect 69
+
+(/ 5 2)
+; expect 2.5
+
+(/ 3 1)
+; expect 3
+
+(+ 5.3 2.4)
+; expect 7.699999999999999
+
+(- 5.3 2.3)
+; expect 3
+
+(+ 5 4 3 2 1)
+; expect 15
+
+(- 6 5 4 3 2 1)
+; expect -9
+
+(+ (* 6 (+ (* 9 2) (+ 5 3))) (/ (+ 16 3) 2))
+; expect 165.5
+
 ; END PROBLEM 0
 
 ;;; These are examples from several sections of "The Structure
@@ -57,10 +91,347 @@
       6))
 ; expect 57
 
+; 1.1.2 added
+
+(define box 2)
+; expect box
+
+box
+; expect 2
+
+(* 6 box)
+; expect 12
+
+(define length 3.5)
+(define width 10.2)
+(define height 5.6)
+(* length width height)
+; expect 199.91999999999996
+
+;;; 1.1.4 added
+
+(define (cube y) (* y y y))
+; expect cube
+
+(cube 35)
+; expect 42875
+
+(define cube (lambda (y) (* y y y))) ; See Section 1.3.2
+(cube 35)
+; expect 42875
+
+(cube (+ 3 2))
+; expect 125
+
+(cube (cube 2))
+; expect 512
+
+(define (sum-of-cubes x y)
+  (+ (cube x) (cube y)))
+(sum-of-cubes 4 5)
+; expect 189
+
+(define (f x)
+  (sum-of-cubes (+ x 2) (* x 3)))
+(f 2)
+; expect 280
+
+;;; 1.6 added
+
+(define (sign x)
+  (cond ((> x 0) 1)
+        ((= x 0) 0)
+        ((< x 0) -1)))
+(sign -5)
+; expect -1
+
+(sign 0)
+; expect 0
+
+(sign 5)
+; expect 1
+
+(abs -100)
+; expect 100
+
+(abs (- 4 5))
+; expect 1
+
+(define (a-minus-abs-b a b)
+  ((if (> b 0) + -) a b))
+(a-plus-abs-b 3 -2)
+
+;;; 1.1.7 added
+(define (square x) (* x x))
+
+(define (sqrt-iter guess x)
+  (if (good-enough? guess x)
+      guess
+      (sqrt-iter (improve guess x)
+                 x)))
+(define (improve guess x)
+  (average guess (/ x guess)))
+(define (average x y)
+  (/ (+ x y) 2))
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+(define (sqrt x)
+  (sqrt-iter 1.0 x))
+
+(sqrt 225)
+; expect 15.000001132796916
+
+(sqrt (sqrt 16))
+; expect 2.0000002520956883
+
+(sqrt(+ (+ 5 3) (* 5 4) 4 4))
+; expect 6.000000005333189
+
+(cube (sqrt 555))
+; expect 13074.933106426668
+
+;;; 1.3.1 added
+(define (fourth-power x) (* x x x x))
+(define (difference term a next b)
+  (if (> a b)
+      0
+      (- (term a)
+         (difference term (next a) next b))))
+(define (inc n) (+ n 1))
+(define (difference-fourth-power a b)
+  (difference fourth-power a inc b))
+(difference-fourth-power 1 10)
+; expect -5995
+
+(define (identity x) x)
+
+(define (difference-integers a b)
+  (difference identity a inc b))
+(difference-integers 1 100)
+; expect -50
+
+;;; 1.3.2 added
+
+((lambda (x y z) (+ x y (square z))) -91 85 63)
+; expect 3963
+
+(define (f x y)
+  (let ((a (+ -35 (* x y)))
+        (b (- 24 y)))
+    (+ (* x (cube a))
+       (* y b)
+       (* a b))))
+(f 5 20)
+; expect 1373465
+
+(define x 67)
+(+ (let ((x 12))
+     (+ x (* x 105)))
+   x)
+; expect 1339
+
+(let ((x 52)
+      (y (+ x -59)))
+  (* x (* 5 y)))
+; expect 2080
+
+;;; 2.1.1
+
+(define x (cons 5 75))
+(car x)
+; expect 5
+
+(cdr x)
+; expect 75
+
+(define x (cons 67 82))
+(define y (cons 8 12))
+(define z (cons x y))
+(define w (cons x z))
+(car (car z))
+; expect 67
+
+(car (cdr z))
+; expect 8
+
+z
+; expect ((67 . 82) 8 . 12)
+
+(car (car (cdr w)))
+; expect 67
+
+(cdr (car (cdr w)))
+; expect 82
+
+(define lists (list 100 54 68 2))
+lists
+; expect (100 54 68 2)
+
+(car lists)
+; expect 100
+
+(cdr lists)
+; expect (54 68 2)
+
+(car (cdr lists))
+; expect 54
+
+(cons 10 lists)
+; expect (10 100 54 68 2)
+
+(cons 5 lists)
+; expect (5 100 54 68 2)
+(list lists)
+; expect ((100 54 68 2))
+
+
+;;; 2.2.3 added
+
+(define (even? x) (= 0 (remainder x 2)))
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+         (cons (car sequence)
+               (filter predicate (cdr sequence))))
+        (else (filter predicate (cdr sequence)))))
+(filter even? (list 1 2 3 4 5))
+; expect (2 4)
+
+(define (unaccumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (unaccumulate op initial (cdr sequence)))))
+(unaccumulate - 5 (list 15 25 69 13 12))
+; expect 53
+
+(unaccumulate / 5 (list 38 49 123 45 90))
+; expect 38.15510204081633
+
+;;; 2.3.1 added
+
+(define x 5)
+
+(define y 7)
+
+(define z 48)
+
+(list x y z)
+; expect (5 7 48)
+
+(list 'x 'y 'z)
+; expect (x y z)
+
+(list 'x y z)
+; expect (x 7 48)
+
+(list x 'y z)
+; expect (5 y 48)
+
+(list x y 'z)
+; expect (5 7 z)
+
+(list 'x 'y z)
+; expect (x y 48)
+
+(list 'x y 'z)
+; expect (x 7 z)
+
+(car '(x y z))
+; expect x
+
+(cdr '(x y z))
+; expect (y z)
+
+(= (eval 'x) x)
+; expect #t
+(= (eval x) x)
+; expect #t
+
+; more tests
+ 
+(define triple (lambda (x) (* 3 x)))
+(triple 13)
+; expect 39
+
+(define compose (lambda (f g) (lambda (x) (f (g x)))))
+((compose list triple) 13)
+; expect (39)
+
+(define apply-twice (lambda (f) (compose f f)))
+((apply-twice triple) 13)
+; expect 117
+
+((apply-twice (apply-twice triple)) 13)
+; expect 1053
+
+(apply square '(8))
+; expect 64
+
+(apply - '(50 4 3))
+; expect 43
+
+(apply (if #f + append) '((23 6) (7 91 8 3)))
+; expect (23 6 7 91 8 3)
+
+(if 0 1 (5/0))
+; expect 1
+
+(or #t 5/0)
+; expect #t
+
+(and #f 5/0)
+; expect #f
+
+(or 5 4)
+; expect 5
+
+(and 5 3)
+; expect 3
+
+(if (or #f 5 #f 5/0) 1 2)
+; expect 1
+
+(and (/ 5 0) #f)
+; expect Error
+
+;;; scheme implementations add-ons
+
+(define (len x)
+  (if (eq? x '())
+    0
+    (+ 1 (len (cdr x)))))
+(len '(5 3 1 4 6 2 5 254 65 2000034))
+; expect 10
+
+;;; Extra-Credit Add-ons
+
+(define (difference n total)
+  (if (zero? n) total
+    (difference (- n 1) (- n total))))
+(difference 1001 0)
+; expect 501
+
+(define (differemce n total)
+  (cond ((zero? n) total)
+        (else (difference (- n 1) (- n total)))))
+(difference 1001 0)
+; expect 501
+
+(define (sum n total)
+  (begin 2 3
+    (if (zero? n) total
+      (and 2 3
+        (or #f
+          (begin 2 3
+            (let ((m n))
+              (difference (- m 1) (- m total)))))))))
+(difference 1001 0)
+; expect 501
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Move the following (exit) line down the file to run additional tests. ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(exit)
 
 
 ;;; 1.1.2
