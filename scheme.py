@@ -73,6 +73,8 @@ def scheme_eval(expr, env, tail=True): # Optional third argument is ignored
         return let_form(expr.second, env)
     elif expr.first == 'mu':
         return env.mu_expr(expr.second)
+    elif expr.first == 'define-macro':
+        return env.macro_expr(expr.second)
     else:
         eval_expr = expr.second.map(lambda param: scheme_eval(param, env))
         if not isinstance(expr.first, Pair):
@@ -138,6 +140,16 @@ class Frame:
             return MuProcedure(expr.first, expr.second)
         else:
             raise SchemeError('{0} must contain at least 2 items.'.format(expr))
+
+    def macro_expr(self,expr):
+        if len(expr) < 2:
+            raise SchemeError('define-macro must contain at least 2 items.')
+        if not isinstance(expr.first, Pair) or scheme_numberp(expr.first.first):
+            raise SchemeError("Improper form for define-macro.")
+        name = expr.first.first
+        formals = expr.first.second
+        body = expr.second
+        return self.define(name, MacroProcedure(formals,body))
     # END PROBLEM 2/3
 
 ##############
@@ -406,7 +418,27 @@ class MuProcedure(Procedure):
             if len(self.body) <= 1:
                 return scheme_eval(self.body.first, env,True)
             else:
-                return scheme_eval(begin_eval(self.body,env),env,True)
+                return scheme_eval(begin_eval(self.body,env),env)
+
+class MacroProcedure(Procedure):
+    def __init__(self, formals, body):
+        """A procedure with formal parameter list FORMALS (a Scheme list) and
+        Scheme list BODY as its definition."""
+        self.formals = formals
+        self.body = body
+
+
+    def __str__(self):
+        return str(Pair('#macro', Pair(self.formals, self.body)))
+
+    def __repr__(self):
+        return 'MacroProcedure({0}, {1})'.format(repr(self.formals), repr(self.body))
+
+    def apply(self, args, env):
+        """evaluates a macro procedure on the arguments that have been
+        passed in"""
+        expr = scheme_eval(self.body,env)
+        print(expr)
 
 
 ##################
@@ -440,7 +472,7 @@ def complete_apply(procedure, args, env):
     val = scheme_apply(procedure, args, env)
     # Add stuff here?
     if isinstance(val, Thunk):
-        return scheme_eval(val.expr, val.env, True)
+        return scheme_eval(val.expr, val.env)
     return val
 ####################
 # Extra Procedures #
